@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.request import HTTPXRequest
+from telegram.error import NetworkError, TimedOut
+
+# --- BOT VE MINI APP AYARLARI ---
+BOT_TOKEN = "8498891693:AAGiOEcIzQAD-EXIeTMsg93gvWXIg_Se1eo"
+
+# GitHub Pages Canlı Bağlantınız (HTTPS %100 Uyumlu)
+MINI_APP_URL = "https://susmusbey03-star.github.io/grupboost/" 
+
+# Loglama ayarları
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    /start komutuna yanıt verir ve Mini App açma butonunu sunar.
+    """
+    user = update.effective_user
+    first_name = user.first_name if user else "Değerli Kullanıcı"
+
+    welcome_text = (
+        f"👋 Merhaba {first_name}! GrupBoost'a Hoş Geldin! 🚀\n\n"
+        f"Telegram topluluklarını keşfetmek, kendi grubunu tanıtmak ve "
+        f"ücretsiz Boost alarak öne çıkmak için doğru adrestesin!\n\n"
+        f"✨ Neler Yapabilirsin?\n"
+        f"📢 ・ Grup ve kanal reklamlarını incele\n"
+        f"⚡ ・ 24 saatte 2 Ücretsiz Boost hakkını kullan\n"
+        f"🏆 ・ En popüler gruplar arasında sıralamaya gir\n"
+        f"➕ ・ Kendi Telegram grubunu listeye ekle\n"
+        f"🛡️ ・ Yönetici onaylı, güvenilir topluluklara katıl\n\n"
+        f"🎯 Amacımız: Telegram topluluklarının keşfedilmesini kolaylaştırmak "
+        f"ve gruplar arasında etkileşimi artırmak!\n\n"
+        f"Aşağıdaki butona tıklayarak GrupBoost Mini App'i hemen açabilirsin! 👇"
+    )
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text="🚀 GrupBoost Uygulamasını Aç",
+                web_app=WebAppInfo(url=MINI_APP_URL)
+            )
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        text=welcome_text,
+        reply_markup=reply_markup,
+        disable_web_page_preview=True
+    )
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Geçici ağ kesintileri ve zaman aşımlarında botun çökmesini önler."""
+    if isinstance(context.error, (NetworkError, TimedOut)):
+        logger.warning(f"Geçici ağ bağlantı hatası oluştu, otomatik yeniden denenecek: {context.error}")
+    else:
+        logger.error("Beklenmeyen bir hata oluştu:", exc_info=context.error)
+
+def main():
+    """Botu başlatan ana fonksiyon."""
+    print("🚀 ErvaBoostBot başlatılıyor...")
+    
+    request = HTTPXRequest(
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=30.0
+    )
+
+    app = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .request(request)
+        .get_updates_request(request)
+        .build()
+    )
+    
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_error_handler(error_handler)
+    
+    print("✅ Bot aktif ve isteklere yanıt vermeye hazır!")
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
