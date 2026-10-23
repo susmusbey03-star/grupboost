@@ -1,97 +1,805 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>GrupBoost - Telegram Mini App</title>
+  
+  <!-- Telegram WebApp JS SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from telegram.request import HTTPXRequest
-from telegram.error import NetworkError, TimedOut
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6Dd6BQ0LrbIkVhsB_N1zGRv7UohCQx6E",
+      authDomain: "ananisikim-c5520.firebaseapp.com",
+      projectId: "ananisikim-c5520",
+      storageBucket: "ananisikim-c5520.firebasestorage.app",
+      messagingSenderId: "788035985346",
+      appId: "1:788035985346:web:39246432f50f5ff528805b",
+      measurementId: "G-NDSSFXFVQC"
+    };
 
-# --- BOT VE MINI APP AYARLARI ---
-BOT_TOKEN = "8498891693:AAGiOEcIzQAD-EXIeTMsg93gvWXIg_Se1eo"
+    const appId = 'grupboost-app';
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-# GitHub Pages Canlı Bağlantınız (HTTPS %100 Uyumlu)
-MINI_APP_URL = "https://susmusbey03-star.github.io/grupboost/" 
+    window.db = db;
+    window.auth = auth;
+    window.appId = appId;
+    window.fbDoc = doc;
+    window.fbSetDoc = setDoc;
+    window.fbGetDoc = getDoc;
+    window.fbUpdateDoc = updateDoc;
+    window.fbCollection = collection;
+    window.fbOnSnapshot = onSnapshot;
+    window.fbAddDoc = addDoc;
+    window.fbDeleteDoc = deleteDoc;
 
-# Loglama ayarları
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
-)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
+    async function initAuth() {
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        console.error("Auth Hata:", err);
+      }
+    }
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    /start komutuna yanıt verir ve Mini App açma butonunu sunar.
-    """
-    user = update.effective_user
-    first_name = user.first_name if user else "Değerli Kullanıcı"
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.currentUser = user;
+        if (window.onFirebaseReady) window.onFirebaseReady(user);
+      }
+    });
 
-    welcome_text = (
-        f"👋 Merhaba {first_name}! GrupBoost'a Hoş Geldin! 🚀\n\n"
-        f"Telegram topluluklarını keşfetmek, kendi grubunu tanıtmak ve "
-        f"ücretsiz Boost alarak öne çıkmak için doğru adrestesin!\n\n"
-        f"✨ Neler Yapabilirsin?\n"
-        f"📢 ・ Grup ve kanal reklamlarını incele\n"
-        f"⚡ ・ 24 saatte 2 Ücretsiz Boost hakkını kullan\n"
-        f"🏆 ・ En popüler gruplar arasında sıralamaya gir\n"
-        f"➕ ・ Kendi Telegram grubunu listeye ekle\n"
-        f"🛡️ ・ Yönetici onaylı, güvenilir topluluklara katıl\n\n"
-        f"🎯 Amacımız: Telegram topluluklarının keşfedilmesini kolaylaştırmak "
-        f"ve gruplar arasında etkileşimi artırmak!\n\n"
-        f"Aşağıdaki butona tıklayarak GrupBoost Mini App'i hemen açabilirsin! 👇"
-    )
+    initAuth();
+  </script>
 
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text="🚀 GrupBoost Uygulamasını Aç",
-                web_app=WebAppInfo(url=MINI_APP_URL)
-            )
-        ]
-    ]
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            telegram: {
+              bg: '#0f172a',
+              card: '#1e293b',
+              blue: '#24a1de',
+              hover: '#1c82b6',
+              accent: '#38bdf8',
+              gold: '#f59e0b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .glow-effect {
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .glow-gold {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between pb-20">
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 p-4">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-lg glow-effect">
+          <i class="fa-solid fa-rocket"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">
+            GrupBoost
+          </h1>
+          <p class="text-[11px] text-slate-400 flex items-center gap-1">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Canlı Sistem Active
+          </p>
+        </div>
+      </div>
 
-    await update.message.reply_text(
-        text=welcome_text,
-        reply_markup=reply_markup,
-        disable_web_page_preview=True
-    )
+      <!-- Boost Badge -->
+      <div class="bg-slate-800/90 border border-slate-700/60 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-inner">
+        <i class="fa-solid fa-bolt text-amber-400 animate-bounce"></i>
+        <div class="text-xs">
+          <span class="text-slate-400 block text-[10px] leading-tight font-medium">Boost Hakkı</span>
+          <span id="boost-count-badge" class="font-bold text-amber-400">2 / 2</span>
+        </div>
+      </div>
+    </div>
+  </header>
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Geçici ağ kesintileri ve zaman aşımlarında botun çökmesini önler."""
-    if isinstance(context.error, (NetworkError, TimedOut)):
-        logger.warning(f"Geçici ağ bağlantı hatası oluştu, otomatik yeniden denenecek: {context.error}")
-    else:
-        logger.error("Beklenmeyen bir hata oluştu:", exc_info=context.error)
+  <!-- Main Content -->
+  <main class="max-w-md mx-auto w-full p-4 space-y-5 flex-1">
 
-def main():
-    """Botu başlatan ana fonksiyon."""
-    print("🚀 ErvaBoostBot başlatılıyor...")
-    
-    request = HTTPXRequest(
-        connect_timeout=30.0,
-        read_timeout=30.0,
-        write_timeout=30.0,
-        pool_timeout=30.0
-    )
+    <!-- Cooldown / Info -->
+    <section class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>24 Saatlik Yenilenme</span>
+        </div>
+        <span id="cooldown-timer" class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 text-slate-300">
+          Hazır
+        </span>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Her 24 saatte <strong class="text-slate-200">2 ücretsiz boost</strong> kazanırsın. Favori gruplarını üst sıralara taşımak için hemen kullan!
+      </p>
+    </section>
 
-    app = (
-        ApplicationBuilder()
-        .token(BOT_TOKEN)
-        .request(request)
-        .get_updates_request(request)
-        .build()
-    )
-    
-    app.add_handler(CommandHandler("start", start_command))
-    app.add_error_handler(error_handler)
-    
-    print("✅ Bot aktif ve isteklere yanıt vermeye hazır!")
-    app.run_polling(drop_pending_updates=True)
+    <!-- Tabs -->
+    <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+      <button id="tab-explore" onclick="switchTab('explore')" class="flex-1 py-2 rounded-lg bg-sky-500 text-white shadow-sm transition-all duration-200">
+        <i class="fa-solid fa-fire mr-1.5"></i>Keşfet & Boost
+      </button>
+      <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all duration-200">
+        <i class="fa-solid fa-plus-circle mr-1.5"></i>Grup Ekle
+      </button>
+      <button id="tab-admin" onclick="switchTab('admin')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all duration-200 relative">
+        <i class="fa-solid fa-user-shield mr-1.5"></i>Onay Paneli
+        <span id="pending-badge" class="hidden absolute top-1 right-2 bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full">0</span>
+      </button>
+    </div>
 
-if __name__ == "__main__":
-    main()
+    <!-- Explore Tab -->
+    <section id="sec-explore" class="space-y-4">
+      <div class="space-y-2">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-sm"></i>
+          <input type="text" id="search-input" oninput="filterGroups()" placeholder="Grup veya kanal ara..." 
+                 class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+        </div>
+
+        <div class="flex gap-2 overflow-x-auto custom-scrollbar pb-1 text-xs">
+          <button onclick="setCategory('Hepsi')" class="cat-btn px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/40 whitespace-nowrap active-cat">Hepsi</button>
+          <button onclick="setCategory('Kripto & Finans')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 whitespace-nowrap">Kripto & Finans</button>
+          <button onclick="setCategory('Yazılım & Teknoloji')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 whitespace-nowrap">Yazılım</button>
+          <button onclick="setCategory('Sohbet & Eğlence')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 whitespace-nowrap">Sohbet</button>
+          <button onclick="setCategory('Oyun')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 whitespace-nowrap">Oyun</button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span>Sıralama (Boost Sayısına Göre)</span>
+        <span id="total-count">0 Topluluk</span>
+      </div>
+
+      <div id="group-list" class="space-y-3"></div>
+    </section>
+
+    <!-- Add Tab -->
+    <section id="sec-add" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-sky-400"></i> Kendi Grubunu Tanıt
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Grubunu sisteme ekle, yöneticiler onaylasın ve boost almaya başla!</p>
+        </div>
+
+        <form id="add-group-form" onsubmit="handleAddGroup(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Grup/Kanal Adı *</label>
+            <input type="text" id="form-title" required placeholder="Örn: Türkiye Kripto Sohbet" 
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Telegram Bağlantısı (t.me/grup) *</label>
+            <input type="url" id="form-link" required placeholder="https://t.me/grupadi" 
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Kategori *</label>
+            <select id="form-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+              <option value="Kripto & Finans">Kripto & Finans</option>
+              <option value="Yazılım & Teknoloji">Yazılım & Teknoloji</option>
+              <option value="Sohbet & Eğlence">Sohbet & Eğlence</option>
+              <option value="Oyun">Oyun & Espor</option>
+              <option value="Diğer">Diğer</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Kısa Açıklama *</label>
+            <textarea id="form-desc" rows="3" required placeholder="Grubunuzun içeriğini açıklayın..." 
+                      class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+          </div>
+
+          <button type="submit" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold py-3 rounded-xl text-xs transition-all duration-200 shadow-lg glow-effect flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Yönetici Onayına Gönder
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Admin Tab -->
+    <section id="sec-admin" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i> Bekleyen Grup Başvuruları
+          </h2>
+          <button onclick="lockAdminPanel()" class="text-[11px] text-rose-400 hover:text-rose-300 flex items-center gap-1 font-semibold">
+            <i class="fa-solid fa-lock"></i> Oturumu Kapat
+          </button>
+        </div>
+
+        <div id="pending-list" class="space-y-3"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Admin Auth Modal -->
+  <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs p-5 space-y-4 relative shadow-2xl">
+      <button onclick="hideAdminAuthModal()" class="absolute top-3 right-3 text-slate-500 hover:text-slate-300">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 mx-auto flex items-center justify-center text-xl shadow-lg">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h3 class="font-bold text-slate-100 text-sm">Yönetici Paneli Erişimi</h3>
+        <p class="text-xs text-slate-400">Devam etmek için yönetici şifresini girin.</p>
+      </div>
+
+      <form onsubmit="handleAdminAuth(event)" class="space-y-3">
+        <div>
+          <input type="password" id="admin-password-input" placeholder="Yönetici Şifresi" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 text-center tracking-widest">
+          <p id="admin-pass-error" class="text-[10px] text-rose-400 text-center mt-1 hidden">Hatalı şifre! Lütfen tekrar deneyin.</p>
+        </div>
+
+        <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-lg glow-gold">
+          Giriş Yap
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notice -->
+  <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-2xl z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-msg">İşlem başarılı!</span>
+  </div>
+
+  <!-- Footer Navigation -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-40">
+    <div class="max-w-md mx-auto flex justify-around py-2">
+      <button onclick="switchTab('explore')" class="flex flex-col items-center gap-1 text-sky-400">
+        <i class="fa-solid fa-house text-base"></i>
+        <span class="text-[10px]">Ana Sayfa</span>
+      </button>
+      <button onclick="switchTab('add')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-plus-square text-base"></i>
+        <span class="text-[10px]">Ekle</span>
+      </button>
+      <button onclick="showProfileModal()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-user text-base"></i>
+        <span class="text-[10px]">Profilim</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Profile Modal -->
+  <div id="profile-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs p-5 space-y-4 relative">
+      <button onclick="hideProfileModal()" class="absolute top-3 right-3 text-slate-500 hover:text-slate-300">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center space-y-2">
+        <div id="modal-user-avatar" class="w-16 h-16 rounded-full bg-gradient-to-tr from-sky-400 to-blue-600 mx-auto flex items-center justify-center text-2xl font-bold text-white shadow-lg uppercase">
+          TG
+        </div>
+        <h3 id="modal-user-name" class="font-bold text-slate-100">Telegram Kullanıcısı</h3>
+        <p id="modal-user-id" class="text-xs text-slate-400">ID: -</p>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-2 text-xs">
+        <div class="flex justify-between text-slate-400">
+          <span>Kalan Boost Hakkı:</span>
+          <span id="modal-boosts" class="font-bold text-amber-400">2</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Toplam Verilen Boost:</span>
+          <span id="modal-total-given" class="font-bold text-sky-400">0</span>
+        </div>
+      </div>
+
+      <button onclick="hideProfileModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 rounded-xl font-medium">
+        Kapat
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let tg = window.Telegram ? window.Telegram.WebApp : null;
+    let tgUser = null;
+
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        tgUser = tg.initDataUnsafe?.user;
+      } catch (err) {
+        console.warn("Telegram WebApp başlatılırken geçici hata:", err);
+      }
+    }
+
+    let groups = [];
+    let pendingGroups = [];
+    let userBoosts = 2;
+    let totalGivenBoosts = 0;
+    let selectedCategory = "Hepsi";
+    let cooldownActive = false;
+    let isAdminAuthenticated = false;
+    const ADMIN_PASSWORD = "yonetici5232";
+
+    window.onFirebaseReady = (user) => {
+      initTelegramUserData();
+      listenPublicGroups();
+      listenPendingGroups();
+      loadUserData(user.uid);
+    };
+
+    function listenPublicGroups() {
+      const publicCol = window.fbCollection(window.db, 'artifacts', window.appId, 'public', 'data', 'groups');
+      window.fbOnSnapshot(publicCol, (snapshot) => {
+        groups = [];
+        snapshot.forEach(docSnap => {
+          groups.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderGroups();
+      }, (error) => {
+        console.error("Grupları dinlerken hata:", error);
+      });
+    }
+
+    function listenPendingGroups() {
+      const pendingCol = window.fbCollection(window.db, 'artifacts', window.appId, 'public', 'data', 'pending_groups');
+      window.fbOnSnapshot(pendingCol, (snapshot) => {
+        pendingGroups = [];
+        snapshot.forEach(docSnap => {
+          pendingGroups.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderPendingGroups();
+      }, (error) => {
+        console.error("Bekleyen grupları dinlerken hata:", error);
+      });
+    }
+
+    async function loadUserData(uid) {
+      try {
+        const userDocRef = window.fbDoc(window.db, 'artifacts', window.appId, 'users', uid, 'profile', 'data');
+        const docSnap = await window.fbGetDoc(userDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          userBoosts = data.remainingBoosts !== undefined ? data.remainingBoosts : 2;
+          totalGivenBoosts = data.totalGivenBoosts || 0;
+        } else {
+          await window.fbSetDoc(userDocRef, {
+            remainingBoosts: 2,
+            totalGivenBoosts: 0
+          });
+        }
+        updateBadge();
+      } catch (err) {
+        console.error("Kullanıcı verisi okuma hatası:", err);
+      }
+    }
+
+    async function saveUserData() {
+      if (!window.currentUser) return;
+      try {
+        const userDocRef = window.fbDoc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'profile', 'data');
+        await window.fbSetDoc(userDocRef, {
+          remainingBoosts: userBoosts,
+          totalGivenBoosts: totalGivenBoosts
+        }, { merge: true });
+      } catch (err) {
+        console.error("Kullanıcı verisi kaydetme hatası:", err);
+      }
+    }
+
+    function initTelegramUserData() {
+      if (tgUser) {
+        const fullName = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || "Telegram Kullanıcısı";
+        document.getElementById('modal-user-name').innerText = fullName;
+        document.getElementById('modal-user-id').innerText = `@${tgUser.username || tgUser.id}`;
+        
+        const initials = (tgUser.first_name ? tgUser.first_name[0] : 'T') + (tgUser.last_name ? tgUser.last_name[0] : '');
+        document.getElementById('modal-user-avatar').innerText = initials.toUpperCase();
+      } else if (window.currentUser) {
+        document.getElementById('modal-user-name').innerText = "Kullanıcı";
+        document.getElementById('modal-user-id').innerText = `ID: ${window.currentUser.uid.substring(0, 8)}...`;
+      }
+    }
+
+    function switchTab(tab) {
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('light');
+      }
+
+      if (tab === 'admin' && !isAdminAuthenticated) {
+        showAdminAuthModal();
+        return;
+      }
+
+      document.getElementById('sec-explore').classList.add('hidden');
+      document.getElementById('sec-add').classList.add('hidden');
+      document.getElementById('sec-admin').classList.add('hidden');
+
+      document.getElementById('tab-explore').className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all duration-200";
+      document.getElementById('tab-add').className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all duration-200";
+      document.getElementById('tab-admin').className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all duration-200 relative";
+
+      if (tab === 'explore') {
+        document.getElementById('sec-explore').classList.remove('hidden');
+        document.getElementById('tab-explore').className = "flex-1 py-2 rounded-lg bg-sky-500 text-white shadow-sm transition-all duration-200";
+      } else if (tab === 'add') {
+        document.getElementById('sec-add').classList.remove('hidden');
+        document.getElementById('tab-add').className = "flex-1 py-2 rounded-lg bg-sky-500 text-white shadow-sm transition-all duration-200";
+      } else if (tab === 'admin') {
+        document.getElementById('sec-admin').classList.remove('hidden');
+        document.getElementById('tab-admin').className = "flex-1 py-2 rounded-lg bg-sky-500 text-white shadow-sm transition-all duration-200 relative";
+      }
+    }
+
+    function showAdminAuthModal() {
+      document.getElementById('admin-password-input').value = '';
+      document.getElementById('admin-pass-error').classList.add('hidden');
+      document.getElementById('admin-auth-modal').classList.remove('hidden');
+    }
+
+    function hideAdminAuthModal() {
+      document.getElementById('admin-auth-modal').classList.add('hidden');
+    }
+
+    function handleAdminAuth(e) {
+      e.preventDefault();
+      const inputPass = document.getElementById('admin-password-input').value;
+      if (inputPass === ADMIN_PASSWORD) {
+        isAdminAuthenticated = true;
+        hideAdminAuthModal();
+        showToast("Yönetici girişi başarılı!");
+        switchTab('admin');
+      } else {
+        document.getElementById('admin-pass-error').classList.remove('hidden');
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      }
+    }
+
+    function lockAdminPanel() {
+      isAdminAuthenticated = false;
+      showToast("Yönetici oturumu kapatıldı.", "error");
+      switchTab('explore');
+    }
+
+    async function boostGroup(groupId) {
+      if (userBoosts <= 0) {
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        showToast("Bugün için tüm Boost haklarını kullandın!", "error");
+        return;
+      }
+
+      const group = groups.find(g => g.id === groupId);
+      if (group) {
+        try {
+          const groupRef = window.fbDoc(window.db, 'artifacts', window.appId, 'public', 'data', 'groups', groupId);
+          await window.fbUpdateDoc(groupRef, {
+            boosts: (group.boosts || 0) + 1
+          });
+
+          userBoosts -= 1;
+          totalGivenBoosts += 1;
+          await saveUserData();
+
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+          }
+
+          updateBadge();
+          showToast(`"${group.title}" başarıyla boostlandı!`);
+
+          if (userBoosts === 0 && !cooldownActive) {
+            startCooldown();
+          }
+        } catch (err) {
+          console.error("Boost hatası:", err);
+          showToast("Boost verirken bir sorun oluştu.", "error");
+        }
+      }
+    }
+
+    function renderGroups() {
+      const listEl = document.getElementById('group-list');
+      const searchVal = document.getElementById('search-input').value.toLowerCase();
+
+      let sorted = [...groups].sort((a, b) => (b.boosts || 0) - (a.boosts || 0));
+
+      let filtered = sorted.filter(g => {
+        const matchesCategory = (selectedCategory === "Hepsi") || (g.category === selectedCategory);
+        const matchesSearch = (g.title || '').toLowerCase().includes(searchVal) || (g.description || '').toLowerCase().includes(searchVal);
+        return matchesCategory && matchesSearch;
+      });
+
+      document.getElementById('total-count').innerText = `${filtered.length} Topluluk`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8 text-slate-500 space-y-2">
+            <i class="fa-solid fa-ghost text-3xl"></i>
+            <p class="text-xs">Henüz kayıtlı veya onaylanmış grup bulunmuyor.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((group, index) => {
+        let rankClass = "bg-slate-800 text-slate-300";
+        if (index === 0) rankClass = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        else if (index === 1) rankClass = "bg-slate-300/20 text-slate-200 border border-slate-300/30";
+        else if (index === 2) rankClass = "bg-amber-700/20 text-amber-600 border border-amber-700/30";
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition-all duration-200 relative">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${rankClass}">
+                    #${index + 1}
+                  </span>
+                  <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                    ${escapeHtml(group.title || '')}
+                    ${group.verified ? '<i class="fa-solid fa-circle-check text-sky-400 text-xs" title="Onaylı Topluluk"></i>' : ''}
+                  </h3>
+                </div>
+                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                  ${escapeHtml(group.description || '')}
+                </p>
+                <div class="pt-1 flex items-center gap-3 text-[11px]">
+                  <span class="text-slate-500"><i class="fa-solid fa-tag mr-1"></i>${group.category || 'Genel'}</span>
+                  <a href="${group.link}" target="_blank" onclick="openTelegramLink(event, '${group.link}')" class="text-sky-400 hover:underline flex items-center gap-1 font-medium">
+                    Katıl <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                  </a>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-center justify-center bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 min-w-[70px]">
+                <span class="text-amber-400 font-extrabold text-sm mb-1">
+                  <i class="fa-solid fa-bolt text-xs"></i> ${group.boosts || 0}
+                </span>
+                <button onclick="boostGroup('${group.id}')" 
+                        class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-[10px] py-1.5 px-2 rounded-lg transition-transform active:scale-95 flex items-center justify-center gap-1 shadow-md glow-gold">
+                  BOOST
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openTelegramLink(e, url) {
+      if (tg && tg.openTelegramLink) {
+        e.preventDefault();
+        tg.openTelegramLink(url);
+      }
+    }
+
+    function renderPendingGroups() {
+      const pendingEl = document.getElementById('pending-list');
+      const badge = document.getElementById('pending-badge');
+
+      if (pendingGroups.length > 0) {
+        badge.classList.remove('hidden');
+        badge.innerText = pendingGroups.length;
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (pendingGroups.length === 0) {
+        pendingEl.innerHTML = `
+          <p class="text-center text-xs text-slate-500 py-4">Onay bekleyen başvuru bulunmuyor.</p>
+        `;
+        return;
+      }
+
+      pendingEl.innerHTML = pendingGroups.map(group => `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="font-bold text-xs text-slate-200">${escapeHtml(group.title || '')}</h4>
+              <span class="text-[10px] text-sky-400">${group.category || ''}</span>
+            </div>
+            <a href="${group.link}" target="_blank" class="text-[10px] text-slate-400 hover:text-slate-200">
+              <i class="fa-solid fa-link"></i> Bağlantı
+            </a>
+          </div>
+          <p class="text-[11px] text-slate-400">${escapeHtml(group.description || '')}</p>
+          <div class="flex gap-2 pt-1">
+            <button onclick="approveGroup('${group.id}')" class="flex-1 bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-400 text-[11px] py-1.5 rounded-lg font-semibold">
+              <i class="fa-solid fa-check"></i> Onayla
+            </button>
+            <button onclick="rejectGroup('${group.id}')" class="flex-1 bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600/30 text-rose-400 text-[11px] py-1.5 rounded-lg font-semibold">
+              <i class="fa-solid fa-xmark"></i> Reddet
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function approveGroup(id) {
+      const target = pendingGroups.find(p => p.id === id);
+      if (target) {
+        try {
+          await window.fbAddDoc(window.fbCollection(window.db, 'artifacts', window.appId, 'public', 'data', 'groups'), {
+            title: target.title,
+            link: target.link,
+            category: target.category,
+            description: target.description,
+            boosts: 1,
+            verified: true
+          });
+
+          const pendingRef = window.fbDoc(window.db, 'artifacts', window.appId, 'public', 'data', 'pending_groups', id);
+          await window.fbDeleteDoc(pendingRef);
+
+          showToast("Grup onaylandı ve canlı sisteme eklendi!");
+        } catch (err) {
+          console.error("Onaylama hatası:", err);
+        }
+      }
+    }
+
+    async function rejectGroup(id) {
+      try {
+        const pendingRef = window.fbDoc(window.db, 'artifacts', window.appId, 'public', 'data', 'pending_groups', id);
+        await window.fbDeleteDoc(pendingRef);
+        showToast("Başvuru reddedildi.", "error");
+      } catch (err) {
+        console.error("Reddetme hatası:", err);
+      }
+    }
+
+    async function handleAddGroup(e) {
+      e.preventDefault();
+      const title = document.getElementById('form-title').value;
+      const link = document.getElementById('form-link').value;
+      const category = document.getElementById('form-category').value;
+      const description = document.getElementById('form-desc').value;
+
+      try {
+        await window.fbAddDoc(window.fbCollection(window.db, 'artifacts', window.appId, 'public', 'data', 'pending_groups'), {
+          title,
+          link,
+          category,
+          description
+        });
+
+        document.getElementById('add-group-form').reset();
+        showToast("Grubunuz onay listesine gönderildi!");
+        switchTab('explore');
+      } catch (err) {
+        console.error("Grup ekleme hatası:", err);
+        showToast("Grup eklenirken hata oluştu.", "error");
+      }
+    }
+
+    function setCategory(cat) {
+      selectedCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        if (btn.innerText.includes(cat)) {
+          btn.className = "cat-btn px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/40 whitespace-nowrap active-cat";
+        } else {
+          btn.className = "cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 whitespace-nowrap";
+        }
+      });
+      renderGroups();
+    }
+
+    function filterGroups() {
+      renderGroups();
+    }
+
+    function startCooldown() {
+      cooldownActive = true;
+      let secondsLeft = 86400; // 24 saat canlı sayaç
+      const timerEl = document.getElementById('cooldown-timer');
+
+      const interval = setInterval(async () => {
+        secondsLeft--;
+        const hours = Math.floor(secondsLeft / 3600);
+        const mins = Math.floor((secondsLeft % 3600) / 60);
+        const secs = secondsLeft % 60;
+        timerEl.innerText = `${hours}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+        if (secondsLeft <= 0) {
+          clearInterval(interval);
+          userBoosts = 2;
+          cooldownActive = false;
+          timerEl.innerText = "Hazır";
+          await saveUserData();
+          updateBadge();
+          showToast("Yeni Boost hakların yüklendi! ⚡");
+        }
+      }, 1000);
+    }
+
+    function updateBadge() {
+      document.getElementById('boost-count-badge').innerText = `${userBoosts} / 2`;
+      document.getElementById('modal-boosts').innerText = userBoosts;
+      document.getElementById('modal-total-given').innerText = totalGivenBoosts;
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = msg;
+      if (type === "error") {
+        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+      }
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    function showProfileModal() {
+      document.getElementById('profile-modal').classList.remove('hidden');
+    }
+
+    function hideProfileModal() {
+      document.getElementById('profile-modal').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
